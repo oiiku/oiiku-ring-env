@@ -2,20 +2,24 @@
   (:require clojure.set))
 
 (defn handler-factory
-  [& {:keys [required-keys handler on-create env-key]
+  [& {:keys [required-keys handler on-create env-key handler-processor env-processor]
       :or {required-keys []
            on-create (fn [env])
-           env-key :env}}]
+           env-key :env
+           handler-processor (fn [env handler] handler)
+           env-processor (fn [env] env)}}]
   (assert handler)
   (let [required-keys (set required-keys)]
     (fn [env]
-      (let [env-keys (set (keys env))
+      (let [env (env-processor env)
+            env-keys (set (keys env))
             missing-keys (clojure.set/difference required-keys env-keys)]
         (if (empty? missing-keys)
-          (do
-            (on-create env)
-            (fn [req]
-              (handler (assoc req env-key env))))
+          (let [processed-handler (handler-processor env handler)]
+            (do
+              (on-create env)
+              (fn [req]
+                (processed-handler (assoc req env-key env)))))
           (throw (Exception. (str "The following config keys were missing: "
                                   missing-keys
                                   ". These are all the required keys: "

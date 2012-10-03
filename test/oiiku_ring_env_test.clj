@@ -6,9 +6,8 @@
 (def ^:dynamic something-from-outside-ns 123)
 
 (deftest creating-factory
-  (let [base-handler (fn [req] (assoc req :handled "foo"))
-        factory (oiiku-ring-env/handler-factory
-                 :handler base-handler)
+  (let [factory (fn [env] (fn [req] (assoc req :handled "foo")))
+        factory (oiiku-ring-env/handler-factory factory)
         mock-env {:some-env-key 123}
         handler (factory mock-env)
         mock-req {:some-req-key "test"}
@@ -18,22 +17,13 @@
 
 (deftest creating-factory-with-required-keys
   (let [factory (oiiku-ring-env/handler-factory
-                 :handler (fn [req])
+                 (fn [env] (fn [req]))
                  :required-keys [:some-env-key :other-env-key])]
     (is (factory {:some-env-key "foo" :other-env-key "bar"}))
     (is (thrown? Exception (factory {:other-env-key "bar"})))
     (is (thrown? Exception (factory {:some-env-key "foo"})))
     (is (thrown? Exception (factory {})))
     (is (thrown? Exception (factory {:cake true})))))
-
-(deftest creating-factory-with-on-create
-  (let [some-ref (ref false)
-        on-create (fn [env] (dosync (ref-set some-ref (env :some-env-key))))
-        factory (oiiku-ring-env/handler-factory
-                 :handler (fn [req])
-                 :on-create on-create)
-        handler (factory {:some-env-key "test"})]
-    (is (= "test" @some-ref))))
 
 (deftest reading-config-files-on-classpath
   (binding [*ns* our-ns]
@@ -61,7 +51,7 @@
 (deftest making-lazy-handler
   (binding [*ns* our-ns]
     (let [factory (oiiku-ring-env/handler-factory
-                   :handler (fn [req] req))
+                   (fn [env] (fn [req] req)))
           lazy-handler (oiiku-ring-env/make-lazy-handler
                         ["config_file_on_classpath.clj"]
                         factory)]

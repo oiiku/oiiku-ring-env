@@ -30,14 +30,14 @@
 (deftest reading-config-files-on-classpath
   (binding [*ns* our-ns]
     (let [env (oiiku-ring-env/read-config-files ["config_file_on_classpath.clj"])]
-      (is (= (eval (env :hello)) "from classpath"))
-      (is (= (eval (env :testing)) something-from-outside-ns)))))
+      (is (= (deref (env :hello)) "from classpath"))
+      (is (= (deref (env :testing)) something-from-outside-ns)))))
 
 (deftest reading-config-files-on-file-system
   (binding [*ns* our-ns]
     (let [env (oiiku-ring-env/read-config-files ["fixtures/config_file_in_file_system.clj"])]
-      (is (= (eval (env :hello)) "from file system"))
-      (is (= (eval (env :testing)) something-from-outside-ns)))))
+      (is (= (deref (env :hello)) "from file system"))
+      (is (= (deref (env :testing)) something-from-outside-ns)))))
 
 (deftest merging-config-files
   (binding [*ns* our-ns]
@@ -45,10 +45,10 @@
                                                    "fixtures/config_file_in_file_system.clj"])
           env-2 (oiiku-ring-env/read-config-files ["fixtures/config_file_in_file_system.clj"
                                                    "config_file_on_classpath.clj"])]
-      (is (= (eval (env-1 :hello)) "from file system"))
-      (is (= (eval (env-1 :testing)) something-from-outside-ns))
-      (is (= (eval (env-2 :hello)) "from classpath"))
-      (is (= (eval (env-2 :testing)) something-from-outside-ns)))))
+      (is (= (deref (env-1 :hello)) "from file system"))
+      (is (= (deref (env-1 :testing)) something-from-outside-ns))
+      (is (= (deref (env-2 :hello)) "from classpath"))
+      (is (= (deref (env-2 :testing)) something-from-outside-ns)))))
 
 (deftest making-lazy-handler
   (binding [*ns* our-ns]

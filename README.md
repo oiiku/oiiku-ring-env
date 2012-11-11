@@ -10,7 +10,7 @@ It's made to work with lein-ring, both in development and production.
 
 It's deployed to clojars, use it by adding the following dependency to your leiningen config:
 
-    [oiiku-ring-env "0.1.0"]
+    [oiiku-ring-env "0.1.1"]
 
 ## Using
 

@@ -1,24 +1,29 @@
 (ns oiiku-ring-env
   (:require clojure.set))
 
+(defn- realize-env
+  "Takes a env that might contain unevaled values and creates a new map with
+   all the keys in `keys` with evaled values."
+  [unevaled-env all-keys]
+  (reduce #(assoc %1 %2 (eval (unevaled-env %2))) {} all-keys))
+
 (defn handler-factory
-  [factory & {:keys [required-keys env-key env-processor]
-      :or {required-keys []
-           env-key :env
-           env-processor (fn [env] env)}}]
-  (let [required-keys (set required-keys)]
-    (fn [env]
-      (let [env (env-processor env)
-            env-keys (set (keys env))
-            missing-keys (clojure.set/difference required-keys env-keys)]
+  [factory & {:keys [all-keys env-key]
+      :or {all-keys []
+           env-key :env}}]
+  (let [all-keys (set all-keys)]
+    (fn [unrealized-env]
+      (let [env-keys (set (keys unrealized-env))
+            missing-keys (clojure.set/difference all-keys env-keys)]
         (if (empty? missing-keys)
-          (let [handler (factory env)]
+          (let [realized-env (realize-env unrealized-env all-keys)
+                handler (factory realized-env)]
             (fn [req]
-              (handler (assoc req env-key env))))
+              (handler (assoc req env-key realized-env))))
           (throw (Exception. (str "The following config keys were missing: "
                                   missing-keys
                                   ". These are all the required keys: "
-                                  required-keys))))))))
+                                  all-keys))))))))
 
 (defn read-config-files
   "Reads a list of files from classpath or file system and merges them from
@@ -28,8 +33,7 @@
          (map (fn [file]
                 (-> (or (clojure.java.io/resource file) file)
                     slurp
-                    read-string
-                    eval))
+                    read-string))
               files)))
 
 (defn make-lazy-handler

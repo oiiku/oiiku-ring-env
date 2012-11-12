@@ -18,11 +18,11 @@ First, create your handler factory, in `core.clj` or whereever.
 
     (def make-app-handler
       (oiiku-ring-env/handler-factory
-      (fn [env]
-        ;; Return any ring handler function here
-        (fn [req]
-          {:status 200 :body (str "Hello from " (get-in req [:env :app-title]))}))
-      :all-keys [:db :cookie-secret :app-title]))
+        (fn [env]
+          ;; Return any ring handler function here
+          (fn [req]
+            {:status 200 :body (str "Hello from " (get-in req [:env :app-title]))}))
+        :all-keys [:db :cookie-secret :app-title]))
 
 To create a new handler, call the factory with your environment.
 

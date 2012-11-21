@@ -11,23 +11,20 @@
           {}
           all-keys))
 
-(defn handler-factory
-  [factory-fn & {:keys [all-keys env-key]
-                 :or {all-keys []
-                      env-key :env}}]
-  (let [all-keys (set all-keys)]
-    (fn [delayed-env]
-      (let [env-keys (set (keys delayed-env))
-            missing-keys (clojure.set/difference all-keys env-keys)]
-        (if (empty? missing-keys)
-          (let [env (deref-env delayed-env all-keys)
-                handler (factory-fn env)]
-            (fn [req]
-              (handler (assoc req env-key env))))
-          (throw (Exception. (str "The following config keys were missing: "
-                                  missing-keys
-                                  ". These are all the required keys: "
-                                  all-keys))))))))
+(defn evaluate-env
+  "An env is just a map, but its values may contain delayed values for lazy
+   loading in case of function calls etc. This function takes a full env and
+   a set of keys and returns a map containing only the keys in all-keys and
+   makes sure its values are evaluated."
+  [delayed-env all-keys]
+  (let [provided-keys (set (keys delayed-env))
+        missing-keys (clojure.set/difference all-keys provided-keys)]
+    (if (empty? missing-keys)
+      (deref-env delayed-env all-keys)
+      (throw (Exception. (str "The following config keys were missing: "
+                              missing-keys
+                              ". Required keys: " all-keys
+                              ". Provided keys: " provided-keys))))))
 
 (defn read-config-files
   "Reads a list of files from classpath or file system and merges them from

@@ -1,6 +1,6 @@
 # oiiku-ring-env
 
-Creates factory functions for creating ring handlers that operate in a specific environment.
+Utility for creating ring handlers that use a specific provided config/env.
 
 Does not use singletons or global vars to achieve this, the end result is fully functional.
 
@@ -10,27 +10,40 @@ It's made to work with lein-ring, both in development and production.
 
 It's deployed to clojars, use it by adding the following dependency to your leiningen config:
 
-    [oiiku-ring-env "0.1.1"]
+    [oiiku-ring-env "0.2.0"]
 
 ## Using
 
-First, create your handler factory, in `core.clj` or whereever.
+You will do most of the work in creating the function that returns a configured ring handler yourself. Manual work requires about as many lines as it would do if we provided an API for it.
 
-    (def make-app-handler
-      (oiiku-ring-env/handler-factory
-        (fn [env]
-          ;; Return any ring handler function here
-          (fn [req]
-            {:status 200 :body (str "Hello from " (get-in req [:env :app-title]))}))
-        :all-keys [:db :cookie-secret :app-title]))
+    (defn make-app-handler
+      [env]
+      (let [env (oiiku-ring-env/evaluate-env
+                 env #{:db :cookie-secret :app-title})]
+        (fn [req] (actual-app-handler (assoc req :env env)))))
 
-To create a new handler, call the factory with your environment.
+This function has the following properties:
 
-    (make-app-handler {:db "an actual db object" :cookie-secret "123abcdef456" :app-title "My App"})
+1. You call it with `(make-app-handler {:db ... :cookie-secret "abc123" :app-title "foo"})`
+2. If you provide an environment with a key not present in the set in the 2nd argument to `evaluate-env`, you'll get an exception.
+3. Values in the provided `env` can be `delay`s, which is nice for lazy evaluation of config values.
+4. The actual environment will be made available as `:env` on the request map.
 
-A request to your app will now respond with 200 OK and the response body `"Hello from My App"`.
+## You don't have to assoc the env on the request.
 
-The actual environment is added to the request map, with the key `env`. You can also specify the name of this key by providing the option `:env-key :my-key` below the `:all-keys` option.
+Here's another example:
+
+    (def ^:dynamic *env* nil)
+    
+    (defn make-app-handler
+      [env]
+      (let [env (oiiku-ring-env/evaluate-env
+                 env #{:db :cookie-secret :app-title})]
+        (fn [req]
+          (binding [*env* env]
+            (actual-app-handler env)))))
+
+Your library author prefers the assoc method as it makes the end result completely functional, but using `binding` is safe in most/all environments as the bindings are thread local, and you normally have one thread per request.
 
 ## Making a lazy handler with config files
 

@@ -45,5 +45,12 @@
 
 (defn make-lazy-handler
   [config-files handler-factory]
-  (let [real-handler (delay (handler-factory (read-config-files config-files)))]
-    (fn [req] ((deref real-handler) req))))
+  (let [lazy-handler (ref nil)]
+    (fn [req]
+      (if-let [handler @lazy-handler]
+        (handler req)
+        (do
+          (let [handler (handler-factory (read-config-files config-files))]
+            (dosync
+             (ref-set lazy-handler handler)
+             (handler req))))))))

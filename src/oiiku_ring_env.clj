@@ -49,8 +49,7 @@
     (fn [req]
       (if-let [handler @lazy-handler]
         (handler req)
-        (do
-          (let [handler (handler-factory (read-config-files config-files))]
-            (dosync
-             (ref-set lazy-handler handler)
-             (handler req))))))))
+        (let [handler (handler-factory (read-config-files config-files))]
+          (dosync
+           (ref-set lazy-handler handler))
+          (handler req))))))

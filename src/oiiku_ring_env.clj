@@ -53,3 +53,11 @@
           (dosync
            (ref-set lazy-handler new-handler))
           (new-handler req))))))
+
+(defn make-lazy-env
+  "Make only a lazy env, no handler, that when dereferenced returns the env."
+  [config-files required-keys]
+  (delay
+   (oiiku-ring-env/evaluate-env
+    (oiiku-ring-env/read-config-files config-files)
+    required-keys)))

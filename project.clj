@@ -1,4 +1,4 @@
-(defproject oiiku-ring-env "0.2.2"
+(defproject oiiku-ring-env "0.3.0"
   :description "Multi-environment ring handlers"
   :url "https://github.com/oiiku/oiiku-ring-env"
   :license {:name "New BSD license"}

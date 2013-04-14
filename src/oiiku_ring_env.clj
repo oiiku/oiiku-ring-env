@@ -43,21 +43,8 @@
                       (map #(delay (eval %)) (vals unevaled)))))
           files)))
 
-(defn make-lazy-handler
-  [config-files handler-factory]
-  (let [lazy-handler (ref nil)]
-    (fn [req]
-      (if-let [handler @lazy-handler]
-        (handler req)
-        (let [new-handler (handler-factory (read-config-files config-files))]
-          (dosync
-           (ref-set lazy-handler new-handler))
-          (new-handler req))))))
-
-(defn make-lazy-env
-  "Make only a lazy env, no handler, that when dereferenced returns the env."
+(defn make-env
   [config-files required-keys]
-  (delay
-   (oiiku-ring-env/evaluate-env
-    (oiiku-ring-env/read-config-files config-files)
-    required-keys)))
+  (oiiku-ring-env/evaluate-env
+   (oiiku-ring-env/read-config-files config-files)
+   required-keys))

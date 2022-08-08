@@ -1,6 +1,6 @@
 (ns oiiku-ring-env-test
-  (:use clojure.test
-        oiiku-ring-env))
+  (:require [clojure.test :refer :all]
+            [oiiku-ring-env :refer :all]))
 
 (def our-ns *ns*)
 (def ^:dynamic something-from-outside-ns 123)
@@ -35,18 +35,3 @@
       (is (= (deref (env-1 :testing)) something-from-outside-ns))
       (is (= (deref (env-2 :hello)) "from classpath"))
       (is (= (deref (env-2 :testing)) something-from-outside-ns)))))
-
-(deftest making-lazy-handler
-  (binding [*ns* our-ns]
-    (let [handler-fn (fn [req] req)
-          factory (fn [env]
-                    (fn [req] (handler-fn (assoc req :env (evaluate-env env #{:testing})))))
-          lazy-handler (oiiku-ring-env/make-lazy-handler
-                        ["config_file_on_classpath.clj"]
-                        factory)]
-      (binding [something-from-outside-ns 456]
-        (let [res (lazy-handler {})]
-          (is (= (get-in res [:env :testing]) 456)))
-        (binding [something-from-outside-ns 789]
-          (let [res (lazy-handler {})]
-            (is (= (get-in res [:env :testing]) 456))))))))
